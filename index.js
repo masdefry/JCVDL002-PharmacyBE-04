@@ -12,8 +12,10 @@ app.get('/', (req, res) => {
     res.status(200).send('<h4>Integrated</h4>');
 });
 
-const { UserRouter } = require('./Routers/UserRouter');
 
-app.use('/user', UserRouter);
+const UserRouter = require('./Routers/UserRouter');
+// const { UserRouter } = require('./Routers/UserRouter');
+
+// app.use('/user', UserRouter);
 
 app.listen(PORT, () => console.log('Api Running:', PORT));
