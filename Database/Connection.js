@@ -1,12 +1,12 @@
 const mysql = require('mysql');
+require('dotenv').config();
 
 // Connection
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'dimzsql',
-    database: 'dbdesign',
-    port: 3306,
+    user: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
     multipleStatements: true
 });
 
