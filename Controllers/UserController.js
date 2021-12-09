@@ -17,7 +17,7 @@ module.exports = {
         try {
             await query('Start Transaction');
 
-            const checkEmail = await query(checkEmailQuery, data.email);
+            const checkEmail = await query(checkEmailQuery, [data.email]);
 
             if (checkEmail.length > 0) throw { status: 406, message: 'Validation Error', detail: 'Email Sudah Terdaftar' };
 
@@ -33,15 +33,17 @@ module.exports = {
 
             const insertData = await query(inputDataQuery, dataToSend)
                 .catch((err) => {
+                    console.log('errInsertQuery');
                     throw err;
                 });
 
             const getUserData = await query(dataForJWTQuery, insertData.insertId)
                 .catch((err) => {
+                    console.log("errGetUserData");
                     throw err;
                 });
 
-            let token = jwtSign({ name: getUserData[0].name, status: getUserData[0].status });
+            let token = jwtSign({ id: getUserData[0].id, status: getUserData[0].status });
 
             let verifMail = {
                 from: `Admin <dimzmailer@gmail.com>`,
@@ -55,14 +57,13 @@ module.exports = {
                     console.log(errMail);
                     res.status(500).send({ message: 'Registration Failed', success: false, err: errMail });
                 }
-                res.status(200).send({ message: 'Registration Success, Please check your email', success: true });
             });
 
             await query('Commit');
             res.status(200).send({
                 error: false,
                 message: 'Register Success',
-                detail: 'Register Successful',
+                detail: 'Register Successful, Please Check Your Email',
                 data: {
                     name: getUserData[0].name,
                     username: getUserData[0].username,
@@ -71,7 +72,42 @@ module.exports = {
                     token: token
                 }
             });
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+    verification: async (req, res) => {
+        const data = req.body;
 
+        let verif = `update user set status = 'varified' where name = ?`;
+
+        try {
+            await query('Start Transaction');
+
+            let setVerif = await query(verif, data.name)
+                .catch((err) => {
+                    throw err;
+                });
+
+            await query('Commit');
+            res.status(200).send({
+                error: false,
+                message: 'Verification Success',
+                detail: 'Email varification successful',
+                data: setVerif
+            });
 
         } catch (err) {
             await query('Rollback');
