@@ -41,7 +41,7 @@ module.exports = {
                     throw err;
                 });
 
-            let token = jwtSign({ name: getUserData[0].name, status: getUserData[0].status });
+            let token = jwtSign({ id: getUserData[0].id, status: getUserData[0].status });
 
             let verifMail = {
                 from: `Admin <dimzmailer@gmail.com>`,
