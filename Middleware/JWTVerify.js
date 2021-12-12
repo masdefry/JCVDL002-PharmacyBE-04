@@ -5,10 +5,10 @@ const jwtVerify = (req, res, next) => {
 
     if (!token) return res.status(406).send({ error: true, message: 'Error Token', detail: `Can't find token!` });
 
-    jwt.verify(token, 'pass123', (err, dataToken) => {
+    jwt.verify(token, process.env.JWT_SECRETKEY, (err, decode) => {
         try {
             if (err) throw err;
-            req.dataToken = dataToken;
+            req.dataToken = decode;
             next();
         } catch (error) {
             res.status(500).send({
