@@ -73,6 +73,7 @@ module.exports = {
                     username: getUserData[0].username,
                     email: getUserData[0].email,
                     password: getUserData[0].password,
+                    role: getUserData[0].role,
                     token: token
                 }
             });
@@ -202,11 +203,13 @@ module.exports = {
 
             await query('Commit');
             if (validation) {
+                console.log(getUserData);
                 res.status(200).send({
                     error: false,
                     message: 'Login Succeed',
                     detail: 'Login success',
                     data: {
+                        id: getUserData[0].ID,
                         token: token
                     }
                 });
