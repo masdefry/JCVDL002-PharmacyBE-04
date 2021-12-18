@@ -40,6 +40,8 @@ module.exports = {
                     throw err;
                 });
 
+            console.log(insertData);
+
             const getUserData = await query(dataForJWTQuery, insertData.insertId)
                 .catch((err) => {
                     console.log("errGetUserData");
@@ -47,13 +49,13 @@ module.exports = {
                 });
 
 
-            let token = jwtSign({ id: getUserData[0].id, role: getUserData[0].role });
+            let token = jwtSign({ id: getUserData[0].id, role: getUserData[0].Role });
 
             let verifMail = {
                 from: `Admin <dimzmailer@gmail.com>`,
                 to: `${data.email}`,
                 subject: `Account Verification`,
-                html: `<a href='http://localhost:3000/auth/${token}'>Click here to verify your email address</a>`
+                html: `<a href='http://localhost:3000/verifyEmail/${token}'>Click here to verify your email address</a>`
             };
 
             transporter.sendMail(verifMail, (errMail, resultMail) => {
@@ -94,9 +96,9 @@ module.exports = {
         }
     },
     verification: async (req, res) => {
-        const data = req.body;
+        const dataToken = req.dataToken;
 
-        let verif = `update user set status = 'varified' where name = ?`;
+        let verif = `update user set status = 'varified' where id = ?`;
 
         try {
             await query('Start Transaction');
@@ -110,7 +112,7 @@ module.exports = {
             res.status(200).send({
                 error: false,
                 message: 'Verification Success',
-                detail: 'Email varification successful',
+                detail: 'Email verification successful',
                 data: setVerif
             });
 
@@ -145,7 +147,7 @@ module.exports = {
                     throw err;
                 });
 
-            let token = jwtSign({ id: getUserData[0].id, role: getUserData[0].role });
+            let token = jwtSign({ id: getUserData[0].id, role: getUserData[0].Role });
 
             let resetPassMail = {
                 from: 'Admin (No REPLY) <dimzmailer@gmail.com>',

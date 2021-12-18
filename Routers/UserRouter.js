@@ -1,11 +1,16 @@
 const express = require('express');
-const UserController = require('../Controllers/UserController');
+const UserAuth = require('../Controllers/UserAuth');
+const UserProfile = require('../Controllers/UserProfile');
+const jwtVerify = require('../Middleware/JWTVerify');
 const routers = express.Router();
 
-routers.post('/registerUser', UserController.registerUser);
-routers.patch('/verification', UserController.verification);
-routers.post('/login', UserController.login);
-routers.patch('changePassword', UserController.changePassword);
-// routers.patch('/resetPassword', UserController.resetPassword);
+routers.post('/registerUser', UserAuth.registerUser);
+routers.patch('/verification', UserAuth.verification);
+routers.post('/login', UserAuth.login);
+routers.patch('changePassword', UserAuth.changePassword);
+routers.patch('/verifyEmail', jwtVerify, UserAuth.verification);
+// routers.patch('/resetPassword', UserAuth.resetPassword);
 
+
+routers.get('/userkeeplogin', jwtVerify, UserProfile.keepLogin);
 module.exports = routers;
