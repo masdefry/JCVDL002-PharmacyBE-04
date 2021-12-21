@@ -7,6 +7,7 @@ const jwtSign = require('../Helpers/JWTSign');
 const hashPassword = require('../Helpers/HashPassword');
 const bcryptHash = require('../Helpers/bcryptHash');
 const transporter = require('../Helpers/nodemailer');
+const emailVerify = require('../Public/verifyEmail.html');
 
 module.exports = {
     registerUser: async (req, res) => {
@@ -55,13 +56,13 @@ module.exports = {
                 from: `Admin <dimzmailer@gmail.com>`,
                 to: `${data.email}`,
                 subject: `Account Verification`,
-                html: `<a href='http://localhost:3000/verifyEmail/${token}'>Click here to verify your email address</a>`
+                html: `${emailVerify}`
             };
 
             transporter.sendMail(verifMail, (errMail, resultMail) => {
                 if (errMail) {
                     console.log(errMail);
-                    res.status(500).send({ message: 'Registration Failed', success: false, err: errMail });
+                    resultMail.status(500).send({ message: 'Registration Failed', success: false, err: errMail });
                 }
             });
 
@@ -201,7 +202,7 @@ module.exports = {
 
             console.log(`validation: ${validation}`);
 
-            let token = jwtSign({ id: getUserData[0].id, role: getUserData[0].role });
+            let token = jwtSign({ id: getUserData[0].ID, role: getUserData[0].Role });
 
             await query('Commit');
             if (validation) {

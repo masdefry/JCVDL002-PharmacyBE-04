@@ -11,7 +11,7 @@ module.exports = {
     userDetail: async (req, res) => {
         let dataToken = req.dataToken;
 
-        let getDetailQuery = 'select * from user_profile where id = ?';
+        let getDetailQuery = 'select * from user_profile where fk_profile_User_ID = ?';
         let getDataQuery = 'select * from user where id = ?';
 
         try {
@@ -43,8 +43,9 @@ module.exports = {
                     desease: getUserDetail[0].Desease_History,
                     weight: getUserDetail[0].Weight,
                     height: getUserDetail[0].Height,
-                    phone: getUserDetail[0].phone,
-                    profileImg: getUserDetail[0].Profile_IMG
+                    phone: getUserDetail[0].Phone,
+                    profileImg: getUserDetail[0].Profile_IMG,
+                    role: getUserData[0].Role
                 }
             });
 
@@ -67,9 +68,12 @@ module.exports = {
     keepLogin: async (req, res) => {
         let dataToken = req.dataToken;
 
-        let navQuery = 'select * from user_profile where id = ?';
+        console.log('ini data token' + JSON.stringify(dataToken));
 
-        let navUserQuery = 'select * from user where id = ?';
+        let navQuery = 'select * from user_profile where fk_profile_User_ID = ?';
+
+        let navUserQuery = 'select * from user where ID = ?';
+        console.log(dataToken.ID);
 
         try {
             await query('Start Transaction');
@@ -86,6 +90,7 @@ module.exports = {
                     throw err;
                 });
 
+            console.table(getUserData);
             await query('Commit');
             res.status(200).send({
                 error: false,
@@ -97,6 +102,53 @@ module.exports = {
                     role: getUserData[0].Role,
                     profileImg: getUserDetail[0].Profile_IMG,
                 }
+            });
+
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+    profileUpdate: async (req, res) => {
+        let data = req.body;
+
+        let query1 = 'UPDATE user_profile SET ? WHERE fk_profile_User_ID = ?';
+
+        try {
+            await query('Start Transaction');
+
+            let dataToSend = {
+                Gender: data.gender ? data.gender : '',
+                Birth_Date: data.birthday ? data.birthday : '',
+                Desease_History: data.deseaseh ? data.deseaseh : '',
+                Weight: data.weight ? data.weight : 0,
+                Height: data.height ? data.height : 0,
+                Phone: data.phone ? data.phone : 0,
+                Profile_IMG: data.profileimg ? data.profileimg : null
+            };
+
+            const updateUserData = await query(query1, [dataToSend, data.id])
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            res.status(200).send({
+                error: false,
+                message: 'Profile Updated',
+                detail: 'Update Profile Success'
             });
 
         } catch (err) {

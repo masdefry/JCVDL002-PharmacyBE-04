@@ -13,4 +13,6 @@ routers.patch('/verifyEmail', jwtVerify, UserAuth.verification);
 
 
 routers.get('/userkeeplogin', jwtVerify, UserProfile.keepLogin);
+routers.get('/userprofiledetail', jwtVerify, UserProfile.userDetail);
+routers.patch('/updateprofile', UserProfile.profileUpdate);
 module.exports = routers;
