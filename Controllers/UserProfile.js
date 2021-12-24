@@ -10,6 +10,7 @@ const bcryptHash = require('../Helpers/bcryptHash');
 module.exports = {
     userDetail: async (req, res) => {
         let dataToken = req.dataToken;
+        console.log('user detail token' + JSON.stringify(dataToken));
 
         let getDetailQuery = 'select * from user_profile where fk_profile_User_ID = ?';
         let getDataQuery = 'select * from user where id = ?';
@@ -29,7 +30,11 @@ module.exports = {
                     throw err;
                 });
 
+            console.log(getUserData);
+            console.log(getUserDetail);
+
             await query('Commit');
+            console.log('berhasil profile detail');
             res.status(200).send({
                 error: false,
                 message: 'Request success',
@@ -65,6 +70,8 @@ module.exports = {
             }
         }
     },
+
+
     keepLogin: async (req, res) => {
         let dataToken = req.dataToken;
 
@@ -73,7 +80,7 @@ module.exports = {
         let navQuery = 'select * from user_profile where fk_profile_User_ID = ?';
 
         let navUserQuery = 'select * from user where ID = ?';
-        console.log(dataToken.ID);
+        console.log(dataToken.id);
 
         try {
             await query('Start Transaction');
@@ -120,8 +127,12 @@ module.exports = {
             }
         }
     },
+
+
     profileUpdate: async (req, res) => {
+        let dataToken = req.dataToken;
         let data = req.body;
+        console.log('profile update ' + dataToken);
 
         let query1 = 'UPDATE user_profile SET ? WHERE fk_profile_User_ID = ?';
 
@@ -138,7 +149,7 @@ module.exports = {
                 Profile_IMG: data.profileimg ? data.profileimg : null
             };
 
-            const updateUserData = await query(query1, [dataToSend, data.id])
+            const updateUserData = await query(query1, [dataToSend, dataToken.id])
                 .catch((err) => {
                     console.log(err);
                     throw err;

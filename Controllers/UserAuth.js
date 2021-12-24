@@ -15,7 +15,7 @@ module.exports = {
 
         let checkEmailQuery = 'SELECT * FROM user WHERE email = ?';
         let inputDataQuery = 'INSERT INTO user SET ?';
-        let dataForJWTQuery = 'SELECT * FROM user WHERE id = ?';
+        let inputProfileId = 'INSERT INTO user_profile (fk_profile_User_ID) values (?) ';
 
         try {
             await query('Start Transaction');
@@ -43,14 +43,13 @@ module.exports = {
 
             console.log(insertData);
 
-            const getUserData = await query(dataForJWTQuery, insertData.insertId)
+            const insertProfileId = await query(inputProfileId, insertData.insertId)
                 .catch((err) => {
-                    console.log("errGetUserData");
+                    console.log(err);
                     throw err;
                 });
 
-
-            let token = jwtSign({ id: getUserData[0].id, role: getUserData[0].Role });
+            let token = jwtSign({ id: insertData.insertId, role: dataToSend.role });
 
             let verifMail = {
                 from: `Admin <dimzmailer@gmail.com>`,
@@ -72,11 +71,11 @@ module.exports = {
                 message: 'Register Success',
                 detail: 'Register Successful, Please Check Your Email',
                 data: {
-                    name: getUserData[0].name,
-                    username: getUserData[0].username,
-                    email: getUserData[0].email,
-                    password: getUserData[0].password,
-                    role: getUserData[0].role,
+                    name: insertData.name,
+                    username: insertData.username,
+                    email: insertData.email,
+                    password: insertData.password,
+                    role: insertData.role,
                     token: token
                 }
             });
@@ -96,6 +95,7 @@ module.exports = {
             }
         }
     },
+
     verification: async (req, res) => {
         const dataToken = req.dataToken;
 
@@ -133,16 +133,16 @@ module.exports = {
             }
         }
     },
+
     ForgotPasswordReq: async (req, res) => {
         let dataBody = req.body;
-        let dataToken = req.dataToken;
 
         let dataReqQuery = 'select * from user where id = ?';
 
         try {
             await query('Start Transaction');
 
-            const getUserData = await query(dataReqQuery, dataToken.id)
+            const getUserData = await query(dataReqQuery, dataBody.id)
                 .catch((err) => {
                     console.log(err, 'Err Get User Data');
                     throw err;
@@ -244,13 +244,13 @@ module.exports = {
         let dataToken = req.dataToken;
         console.log(dataToken);
 
-        let dataReqQuery = 'select from user where email = ?';
+        let dataReqQuery = 'select * from user where id = ?';
         let patchReq = 'update user set password = ? where email = ?';
 
         try {
             await query('Start Transaction');
 
-            const getUserData = await query(dataReqQuery, data.email)
+            const getUserData = await query(dataReqQuery, dataToken.id)
                 .catch((err) => {
                     console.log(err);
                     throw err;
@@ -275,13 +275,11 @@ module.exports = {
                 });
 
             await query('Commit');
-            if (resetPassword) {
-                res.status(200).send({
-                    error: false,
-                    message: 'Password Reset',
-                    detail: 'Reset password success'
-                });
-            }
+            res.status(200).send({
+                error: false,
+                message: 'Password Reset',
+                detail: 'Reset password success'
+            });
 
         } catch (err) {
             await query('Rollback');
@@ -309,14 +307,13 @@ module.exports = {
         try {
             await query('Start Trasaction');
 
-            // const getUserData = await query(getQuery, data.email)
-            //     .catch((err) => {
-            //         console.log(err);
-            //         throw err;
-            //     });
-
             let hashedPassword = bcryptHash(data.password);
-            const resetPass = await query(updateQuery, [hashedPassword, data.email]);
+
+            const resetPass = await query(updateQuery, [hashedPassword, dataToken.email])
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
 
         } catch (err) {
             await query('Rollback');
