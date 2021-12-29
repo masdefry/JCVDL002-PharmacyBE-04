@@ -2,12 +2,13 @@ const util = require('util');
 const { db } = require('../Database/Connection');
 const query = util.promisify(db.query).bind(db);
 const bcrypt = require('bcrypt');
+const handlebars = require('handlebars');
+const fs = require('fs');
 
 const jwtSign = require('../Helpers/JWTSign');
 const hashPassword = require('../Helpers/HashPassword');
 const bcryptHash = require('../Helpers/bcryptHash');
 const transporter = require('../Helpers/nodemailer');
-const emailVerify = require('../Public/verifyEmail.html');
 
 module.exports = {
     registerUser: async (req, res) => {
@@ -27,7 +28,7 @@ module.exports = {
             let hashedPassword = bcryptHash(data.password);
 
             let dataToSend = {
-                name: data.name ? data.name : '',
+                name: data.fullname ? data.fullname : '',
                 username: data.username ? data.username : '',
                 email: data.email ? data.email : '',
                 password: hashedPassword ? hashedPassword : '',
@@ -51,18 +52,31 @@ module.exports = {
 
             let token = jwtSign({ id: insertData.insertId, role: dataToSend.role });
 
-            let verifMail = {
-                from: `Admin <dimzmailer@gmail.com>`,
-                to: `${data.email}`,
-                subject: `Account Verification`,
-                html: `${emailVerify}`
-            };
+            fs.readFileSync(`C:\Users\Dimz\Documents\Purwadhika\FinalProject\fpBackend\Public\verifyEmail.html`, { encoding: 'utf-8' }, (err, file) => {
+                if (err) throw err;
 
-            transporter.sendMail(verifMail, (errMail, resultMail) => {
-                if (errMail) {
-                    console.log(errMail);
-                    resultMail.status(500).send({ message: 'Registration Failed', success: false, err: errMail });
-                }
+                const template = handlebars.compile(file);
+                const emailVerify = template({ link: `http://localhost:3000/confirmation/${token}` });
+
+                transporter.sendMail({
+                    from: 'Admin <dimzmailer@gmail.com>',
+                    to: data.email,
+                    subject: `Account Verification`,
+                    html: emailVerify
+                })
+
+                    .then((response) => {
+                        res.status(200).send({
+                            error: false,
+                            message: 'Register Success. Check Email To Activation Account!'
+                        });
+                    })
+                    .catch((error) => {
+                        res.status(500).send({
+                            error: true,
+                            message: error.message
+                        });
+                    });
             });
 
             await query('Commit');
@@ -180,6 +194,7 @@ module.exports = {
             }
         }
     },
+
     login: async (req, res) => {
         let data = req.body;
 
@@ -213,6 +228,7 @@ module.exports = {
                     detail: 'Login success',
                     data: {
                         id: getUserData[0].ID,
+                        role: getUserData[0].Role,
                         token: token
                     }
                 });

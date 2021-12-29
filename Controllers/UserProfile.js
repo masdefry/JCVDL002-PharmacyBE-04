@@ -75,12 +75,12 @@ module.exports = {
     keepLogin: async (req, res) => {
         let dataToken = req.dataToken;
 
-        console.log('ini data token' + JSON.stringify(dataToken));
+        // console.log('ini data token' + JSON.stringify(dataToken));
 
         let navQuery = 'select * from user_profile where fk_profile_User_ID = ?';
 
         let navUserQuery = 'select * from user where ID = ?';
-        console.log(dataToken.id);
+        // console.log(dataToken.id);
 
         try {
             await query('Start Transaction');
@@ -97,8 +97,9 @@ module.exports = {
                     throw err;
                 });
 
-            console.table(getUserData);
+            // console.table(getUserData);
             await query('Commit');
+            console.log('Berhasil Keep Login');
             res.status(200).send({
                 error: false,
                 message: 'Request Success',
@@ -140,13 +141,11 @@ module.exports = {
             await query('Start Transaction');
 
             let dataToSend = {
-                Gender: data.gender ? data.gender : '',
-                Birth_Date: data.birthday ? data.birthday : '',
-                Desease_History: data.deseaseh ? data.deseaseh : '',
-                Weight: data.weight ? data.weight : 0,
-                Height: data.height ? data.height : 0,
-                Phone: data.phone ? data.phone : 0,
-                Profile_IMG: data.profileimg ? data.profileimg : null
+                Gender: data.gender,
+                Birth_Date: data.birthDate,
+                Weight: data.weight,
+                Height: data.height,
+                Phone: data.phone,
             };
 
             const updateUserData = await query(query1, [dataToSend, dataToken.id])

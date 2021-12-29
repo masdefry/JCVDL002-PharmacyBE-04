@@ -9,7 +9,7 @@ routers.patch('/verification', UserAuth.verification);
 routers.post('/login', UserAuth.login);
 routers.patch('changePassword', jwtVerify, UserAuth.changePassword);
 routers.patch('/verifyEmail', jwtVerify, UserAuth.verification);
-// routers.patch('/resetPassword', UserAuth.resetPassword);
+routers.patch('/resetPassword', UserAuth.resetPassword);
 
 
 routers.get('/userkeeplogin', jwtVerify, UserProfile.keepLogin);
