@@ -13,6 +13,7 @@ const transporter = require('../Helpers/nodemailer');
 module.exports = {
     registerUser: async (req, res) => {
         const data = req.body;
+        console.log(data.email);
 
         let checkEmailQuery = 'SELECT * FROM user WHERE email = ?';
         let inputDataQuery = 'INSERT INTO user SET ?';
@@ -42,7 +43,7 @@ module.exports = {
                     throw err;
                 });
 
-            console.log(insertData);
+            // console.log(insertData);
 
             const insertProfileId = await query(inputProfileId, insertData.insertId)
                 .catch((err) => {
@@ -52,15 +53,15 @@ module.exports = {
 
             let token = jwtSign({ id: insertData.insertId, role: dataToSend.role });
 
-            fs.readFileSync(`C:\Users\Dimz\Documents\Purwadhika\FinalProject\fpBackend\Public\verifyEmail.html`, { encoding: 'utf-8' }, (err, file) => {
+            fs.readFileSync(`C:/Users/Dimz/Documents/Purwadhika/FinalProject/fpBackend/Public/verifyEmail.html`, { encoding: 'utf-8' }, (err, file) => {
                 if (err) throw err;
 
                 const template = handlebars.compile(file);
                 const emailVerify = template({ link: `http://localhost:3000/confirmation/${token}` });
 
                 transporter.sendMail({
-                    from: 'Admin <dimzmailer@gmail.com>',
-                    to: data.email,
+                    from: 'dimzmailer@gmail.com',
+                    to: data.mail,
                     subject: `Account Verification`,
                     html: emailVerify
                 })
@@ -215,7 +216,7 @@ module.exports = {
                     throw err;
                 });
 
-            console.log(`validation: ${validation}`);
+            // console.log(`validation: ${validation}`);
 
             let token = jwtSign({ id: getUserData[0].ID, role: getUserData[0].Role });
 
@@ -258,10 +259,10 @@ module.exports = {
     changePassword: async (req, res) => {
         let data = req.body;
         let dataToken = req.dataToken;
-        console.log(dataToken);
+        // console.log(dataToken);
 
         let dataReqQuery = 'select * from user where id = ?';
-        let patchReq = 'update user set password = ? where email = ?';
+        let patchReq = 'update user set Password = ? where email = ?';
 
         try {
             await query('Start Transaction');
@@ -275,6 +276,7 @@ module.exports = {
             let oldValid = await bcrypt.compare(data.oldPassword, getUserData[0].Password);
 
             if (!oldValid) {
+                console.log('Password tidak valid');
                 throw {
                     status: 400,
                     message: 'Old password not valid',
@@ -282,15 +284,17 @@ module.exports = {
                 };
             }
 
+            console.log(data.newPassword);
             let hashedPassword = bcryptHash(data.newPassword);
 
-            const resetPassword = await query(patchReq, [hashedPassword, getUserData[0].email])
+            await query(patchReq, [hashedPassword, getUserData[0].email])
                 .catch((err) => {
                     console.log(err);
                     throw err;
                 });
 
             await query('Commit');
+            console.log('Berhasil Change Password');
             res.status(200).send({
                 error: false,
                 message: 'Password Reset',

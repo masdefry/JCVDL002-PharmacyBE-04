@@ -15,7 +15,9 @@ app.get('/', (req, res) => {
 });
 
 const UserRouter = require('./Routers/UserRouter');
+const AdminRouter = require('./Routers/AdminRouter');
 
 app.use('/user', UserRouter);
+app.use('/admin', AdminRouter);
 
 app.listen(PORT, () => console.log('Api Running:', PORT));

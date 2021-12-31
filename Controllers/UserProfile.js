@@ -10,7 +10,7 @@ const bcryptHash = require('../Helpers/bcryptHash');
 module.exports = {
     userDetail: async (req, res) => {
         let dataToken = req.dataToken;
-        console.log('user detail token' + JSON.stringify(dataToken));
+        // console.log('user detail token' + JSON.stringify(dataToken));
 
         let getDetailQuery = 'select * from user_profile where fk_profile_User_ID = ?';
         let getDataQuery = 'select * from user where id = ?';
@@ -30,8 +30,8 @@ module.exports = {
                     throw err;
                 });
 
-            console.log(getUserData);
-            console.log(getUserDetail);
+            // console.log(getUserData);
+            // console.log(getUserDetail);
 
             await query('Commit');
             console.log('berhasil profile detail');
@@ -133,22 +133,34 @@ module.exports = {
     profileUpdate: async (req, res) => {
         let dataToken = req.dataToken;
         let data = req.body;
-        console.log('profile update ' + dataToken);
+        // console.log('profile update ' + dataToken);
 
-        let query1 = 'UPDATE user_profile SET ? WHERE fk_profile_User_ID = ?';
+        let insertQuery = 'UPDATE user_profile SET ? WHERE fk_profile_User_ID = ?';
+        let getDataQuery = 'SELECT * FROM user_profile where fk_profile_User_ID = ?';
+        let setNameQuery = 'UPDATE user SET `Name` = ? WHERE (`ID` = ?)';
 
         try {
             await query('Start Transaction');
 
+            const getUserData = await query(getDataQuery, dataToken.id);
+
             let dataToSend = {
-                Gender: data.gender,
-                Birth_Date: data.birthDate,
-                Weight: data.weight,
-                Height: data.height,
-                Phone: data.phone,
+                Gender: data.gender ? data.gender : getUserData[0].Gender,
+                Birth_Date: data.birthDate ? data.birthDate : getUserData[0].Birth_Date,
+                Weight: data.weight ? data.weight : getUserData[0].Weight,
+                Height: data.height ? data.height : getUserData[0].Height,
+                Phone: data.phone ? data.phone : getUserData[0].Phone,
             };
 
-            const updateUserData = await query(query1, [dataToSend, dataToken.id])
+            if (data.name) {
+                await query(setNameQuery, [data.name, dataToken.id])
+                    .catch((err) => {
+                        console.log(err);
+                        throw err;
+                    });
+            }
+
+            const updateUserData = await query(insertQuery, [dataToSend, dataToken.id])
                 .catch((err) => {
                     console.log(err);
                     throw err;
