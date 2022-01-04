@@ -3,9 +3,11 @@ const multer = require('multer');
 const singleUpload = () => {
     // Setting Multer
     // 1. Disk Storage
+    console.log('masuk single upload');
     let storage = multer.diskStorage({
         destination: function (req, file, next) {
-            next(null, '../Public/ProductImages');
+            console.log(file);
+            next(null, 'Public/ProductImages');
         },
         filename: function (req, file, next) {
             next(null, 'PIMG' + '-' + Date.now() + '.' + file.mimetype.split('/')[1]);

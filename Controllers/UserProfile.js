@@ -188,5 +188,54 @@ module.exports = {
                 });
             }
         }
+    },
+
+    AddAddress: async (req, res) => {
+        console.log('masuk addaddress');
+        let dataToken = req.dataToken;
+        let data = req.body;
+        console.log(data);
+
+        let addAddressQuery = 'INSERT INTO addresses SET ?';
+        try {
+            await query('Start Transaction');
+
+            let dataToSend = {
+                Fk_Address_User_ID: data.Fk_Address_User_ID,
+                Full_Address: data.Full_Address,
+                Recipient_Name: data.Recipient_Name,
+                Recipient_Phone: data.Recipient_Phone,
+                Zip_Code: data.Zip_Code,
+                Address_Label: data.Address_Label,
+                City: data.City,
+            };
+
+            let AddressData = await query(addAddressQuery, dataToSend)
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            res.status(200).send({
+                error: false,
+                message: 'Address Added',
+                detail: 'Add Address Success'
+            });
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
     }
 };
