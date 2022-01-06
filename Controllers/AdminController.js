@@ -12,21 +12,16 @@ app.use('/Public', express.static('storage'));
 
 module.exports = {
     addProduct: async (req, res) => {
-        let data = req.body;
+        let { data } = req.body;
+        let imgPath = req.body.storePicture;
         console.log(data);
         let dataParsed = JSON.parse(data);
         console.log([dataParsed]);
 
-        let insertDataQuery = 'INSERT INTO addresses SET ?';
-        let insertImgQuery = 'UPDATE products SET `Image` = ? WHERE (`ID` = ?)';
-
-        let FilePathLocation;
+        let insertDataQuery = 'INSERT INTO products SET ?';
+        let insertImgQuery = 'UPDATE products SET `Image` = ? WHERE (`SKU` = ?)';
 
         try {
-            await singleUploadAwait(req, res);
-            if (req.files.length === 0 || req.files === undefined) throw { message: 'File Not Found' };
-            FilePathLocation = 'http://localhost:2004/' + req.files[0].path;
-
             await query('Start Transaction');
 
             const insertData = await query(insertDataQuery, dataParsed)
@@ -35,7 +30,7 @@ module.exports = {
                     throw err;
                 });
 
-            const insertImg = await query(insertImgQuery, [FilePathLocation, insertData.insertId])
+            const insertImg = await query(insertImgQuery, [imgPath, insertData.insertId])
                 .catch((err) => {
                     console.log(err);
                     throw err;
