@@ -142,7 +142,11 @@ module.exports = {
         try {
             await query('Start Transaction');
 
-            const getUserData = await query(getDataQuery, dataToken.id);
+            const getUserData = await query(getDataQuery, dataToken.id)
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
 
             let dataToSend = {
                 Gender: data.gender ? data.gender : getUserData[0].Gender,

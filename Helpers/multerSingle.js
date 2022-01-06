@@ -7,7 +7,7 @@ const singleUpload = () => {
     let storage = multer.diskStorage({
         destination: function (req, file, next) {
             console.log(file);
-            next(null, 'Public/ProductImages');
+            next(null, '/Public/ProductImages');
         },
         filename: function (req, file, next) {
             next(null, 'PIMG' + '-' + Date.now() + '.' + file.mimetype.split('/')[1]);

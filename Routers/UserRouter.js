@@ -8,6 +8,7 @@ const routers = express.Router();
 routers.post('/registerUser', UserAuth.registerUser);
 routers.patch('/verification', UserAuth.verification);
 routers.post('/login', UserAuth.login);
+routers.post('/forgotpassword', UserAuth.ForgotPasswordReq);
 routers.patch('/changePassword', jwtVerify, UserAuth.changePassword);
 routers.patch('/verifyEmail', jwtVerify, UserAuth.verification);
 routers.patch('/resetPassword', UserAuth.resetPassword);
