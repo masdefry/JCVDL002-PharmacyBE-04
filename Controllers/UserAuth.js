@@ -270,10 +270,12 @@ module.exports = {
     changePassword: async (req, res) => {
         let data = req.body;
         let dataToken = req.dataToken;
+        console.log(data.oldPassword);
+        console.log(data.newPassword);
         // console.log(dataToken);
 
         let dataReqQuery = 'select * from user where id = ?';
-        let patchReq = 'update user set Password = ? where email = ?';
+        let patchReq = 'update user set Password = ? where Email = ?';
 
         try {
             await query('Start Transaction');

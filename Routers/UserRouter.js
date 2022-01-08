@@ -17,6 +17,11 @@ routers.patch('/resetPassword', UserAuth.resetPassword);
 routers.get('/userkeeplogin', jwtVerify, UserProfile.keepLogin);
 routers.get('/userprofiledetail', jwtVerify, UserProfile.userDetail);
 routers.patch('/updateprofile', jwtVerify, UserProfile.profileUpdate);
-routers.post('/userAddAddress', UserProfile.AddAddress);
+routers.post('/userAddAddress', jwtVerify, UserProfile.AddAddress);
+routers.get('/fetchAddress', jwtVerify, UserProfile.fetchAddress);
+routers.get('/fetchActiveAddress', jwtVerify, UserProfile.fetchActiveAddress);
+routers.patch('/editAddress', UserProfile.editAddress);
+routers.delete('/deleteAddress', UserProfile.deleteAddress);
+routers.patch('/selectAddress', jwtVerify, UserProfile.selectAddress);
 
 module.exports = routers;

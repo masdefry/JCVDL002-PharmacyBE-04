@@ -13,7 +13,7 @@ const randomName = (fileName) => {
     return result;
 };
 
-let finalDestination = 'Public/ProductImages';
+let finalDestination = 'Public/OrderImages';
 
 module.exports = {
     singleUpload: multer({
