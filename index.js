@@ -9,6 +9,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('/Public'));
+app.use('/Public', express.static('Public'));
 // app.use(bearerToken);
 
 app.get('/', (req, res) => {

@@ -32,6 +32,7 @@ module.exports = {
 
             // console.log(getUserData);
             // console.log(getUserDetail);
+            const image = getUserDetail[0].Profile_IMG ? `http://localhost:2004/${getUserDetail[0].Profile_IMG}` : null;
 
             await query('Commit');
             console.log('berhasil profile detail');
@@ -49,12 +50,52 @@ module.exports = {
                     weight: getUserDetail[0].Weight,
                     height: getUserDetail[0].Height,
                     phone: getUserDetail[0].Phone,
-                    profileImg: getUserDetail[0].Profile_IMG,
+                    profileImg: image,
                     role: getUserData[0].Role
                 }
             });
 
         } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+
+    uploadProfileImg: async (req, res) => {
+        console.log('masuk Upload profile');
+        let dataToken = req.dataToken;
+        let imgPath = req.body.storePicture;
+
+        const setImageQuery = 'UPDATE user_profile SET Profile_IMG = ? WHERE (fk_profile_User_ID = ?)';
+
+        try {
+            await query('Start Transaction');
+
+            const SetProfileImage = await query(setImageQuery, [imgPath, dataToken.id])
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            console.log('berhasil profile detail');
+            res.status(200).send({
+                error: false,
+                message: 'Profile Image Updated',
+                detail: 'Update Profile Image Success',
+            });
+        } catch (error) {
             await query('Rollback');
             if (err.status) {
                 res.status(err.status).send({
@@ -108,6 +149,7 @@ module.exports = {
                     username: getUserData[0].Username,
                     name: getUserData[0].Name,
                     role: getUserData[0].Role,
+                    status: getUserData[0].Status,
                     profileImg: getUserDetail[0].Profile_IMG,
                 }
             });
@@ -394,7 +436,8 @@ module.exports = {
     },
 
     deleteAddress: async (req, res) => {
-        let data = req.body;
+        console.log(req);
+        let data = req.params;
 
         const deleteQuery = 'DELETE FROM addresses WHERE (ID = ?)';
 
