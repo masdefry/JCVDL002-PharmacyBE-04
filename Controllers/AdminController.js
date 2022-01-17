@@ -154,7 +154,7 @@ module.exports = {
 
     fetchProduct: async (req, res) => {
 
-        const getProductQuery = 'SELECT products.SKU, products.Category_ID, products.Name, products.Qty, products.Price, products.Image, products.Description, product_category.Name AS Category_Name FROM products INNER JOIN product_category ON products.Category_ID = product_category.ID';
+        const getProductQuery = 'SELECT products.SKU, products.Category_ID, products.Name, products.Qty, products.Price, products.Image, products.Description, product_category.Name AS Category_Name, product_category.Value AS Category_Value FROM products INNER JOIN product_category ON products.Category_ID = product_category.ID';
 
         try {
             await query('Start Transaction');
@@ -168,6 +168,7 @@ module.exports = {
             let productData = getProduct.map((val) => ({
                 SKU: val.SKU,
                 Category_ID: val.Category_Name,
+                Category_Value: val.Category_Value,
                 Name: val.Name,
                 Price: val.Price,
                 Qty: val.Qty,
@@ -345,6 +346,19 @@ module.exports = {
     setTotalCost: async (req, res) => {
         let data = req.body;
         let dataToken = req.dataToken;
+        let forUpdate = data.forUpdate;
+
+        let whens = "WHEN ? THEN ? ".repeat(forUpdate.length);
+
+        let updateProductQuery = `UPDATE products SET Qty = Qty - CASE SKU ${whens} END WHERE SKU IN (?)`;
+
+        let params = [],
+            skus = [];
+        forUpdate.forEach(({ product_SKU, reqQty }) => {
+            params.push(product_SKU, reqQty);
+            skus.push(product_SKU);
+        });
+        params.push(skus);
 
         const setQuery = 'UPDATE prescription_order SET ? WHERE Prescription_User_ID = ? AND ID = ? ';
 
@@ -353,9 +367,15 @@ module.exports = {
 
             let dataToSet = {
                 Status: 1,
-                Total_Price: data.totalPrice,
+                Total_Price: data.totalCost,
                 Order_Qty: data.totalPrdct
             };
+
+            const updateProduct = await query(updateProductQuery, params)
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
 
             const setCost = await query(setQuery, [dataToSet, dataToken.id, data.ID])
                 .catch((err) => {
@@ -364,7 +384,7 @@ module.exports = {
                 });
 
             await query('Commit');
-            console.log('berhasil get prescription for admin');
+            console.log('berhasil set total cost');
             res.status(200).send({
                 error: false,
                 message: 'Total Cost Set',

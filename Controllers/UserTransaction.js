@@ -180,7 +180,7 @@ module.exports = {
         let dataToken = req.dataToken;
         let cardNumber = cardGen({ issuer: 'MasterCard' });
 
-        const setNotifQuery = 'INSERT INTO notification SET ?';
+        // const setNotifQuery = 'INSERT INTO notification SET ?';
         const updatePaymentQuery = 'UPDATE payments SET Status = ? WHERE ID = ?';
         const setPaymentQuery = 'UPDATE prescription_order SET ? WHERE (ID = ?)';
 
@@ -193,11 +193,11 @@ module.exports = {
                     throw err;
                 });
 
-            let setNotif = {
-                Prescription_Order_ID: dataToken.ID,
-                User_ID: data.ID,
-                Status: 'unpaid'
-            };
+            // let setNotif = {
+            //     Prescription_Order_ID: dataToken.ID,
+            //     User_ID: data.ID,
+            //     Status: 'unpaid'
+            // };
 
             let dataToSet = {
                 Virtual_Account: cardNumber,
@@ -213,11 +213,11 @@ module.exports = {
                     throw err;
                 });
 
-            const setNotification = await query(setNotifQuery, setNotif)
-                .catch((err) => {
-                    console.log(err);
-                    throw err;
-                });
+            // const setNotification = await query(setNotifQuery, setNotif)
+            //     .catch((err) => {
+            //         console.log(err);
+            //         throw err;
+            //     });
 
             await query('Commit');
             console.log('Berhasil Set Payment');
