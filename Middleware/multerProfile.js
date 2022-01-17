@@ -20,7 +20,7 @@ module.exports = {
         storage: multer.diskStorage({
             destination: finalDestination,
             filename: (req, file, cb) => {
-                console.log(req.body);
+                console.log(file);
                 const fileName = randomName(file.originalname);
                 const filePath = `/${fileName}`;
 

@@ -266,7 +266,7 @@ module.exports = {
     fetchPrescriptionOrder: async (req, res) => {
         let dataToken = req.dataToken;
 
-        const fetchQuery = 'SELECT *, prescription_order.ID as prescription_ID FROM prescription_order LEFT JOIN shipping_methods ON prescription_order.Shipping_Method = shipping_methods.Methods_ID LEFT JOIN order_status ON prescription_order.Status = order_status.ID LEFT JOIN addresses ON prescription_order.Address_Target_Id = addresses.ID LEFT JOIN payment_method ON prescription_order.Payment_Method_ID = payment_method.ID WHERE prescription_order.Prescription_User_ID = ?';
+        const fetchQuery = 'SELECT *, prescription_order.ID as prescription_ID FROM prescription_order LEFT JOIN shipping_methods ON prescription_order.Shipping_Method = shipping_methods.Methods_ID LEFT JOIN order_status ON prescription_order.Status = order_status.ID LEFT JOIN addresses ON prescription_order.Address_Target_Id = addresses.ID LEFT JOIN payment_method ON prescription_order.Payment_Method_ID = payment_method.ID WHERE prescription_order.Prescription_User_ID = ? order by prescription_order.ID desc';
 
         try {
             await query('Start Transaction');
@@ -306,7 +306,7 @@ module.exports = {
     fetchUserPresOrder: async (req, res) => {
         let data = req.body;
 
-        const fetchQuery = 'SELECT *, prescription_order.ID as prescription_ID FROM dbdesign.prescription_order LEFT JOIN shipping_methods ON prescription_order.Shipping_Method = shipping_methods.Methods_ID LEFT JOIN order_status ON prescription_order.Status = order_status.ID LEFT JOIN addresses ON prescription_order.Address_Target_Id = addresses.ID WHERE prescription_order.User_Email = ?';
+        const fetchQuery = 'SELECT *, prescription_order.ID as prescription_ID FROM prescription_order LEFT JOIN shipping_methods ON prescription_order.Shipping_Method = shipping_methods.Methods_ID LEFT JOIN order_status ON prescription_order.Status = order_status.ID LEFT JOIN addresses ON prescription_order.Address_Target_Id = addresses.ID WHERE prescription_order.User_Email = ? order by prescription_order.ID desc';
 
         try {
             await query('Start Transaction');
@@ -450,6 +450,44 @@ module.exports = {
                 detail: 'Product sent with shipping code',
             });
         } catch (error) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+
+    fetchReqOrder: async (req, res) => {
+
+        const reqOrderQuery = 'SELECT *, prescription_order.ID as prescription_ID FROM prescription_order LEFT JOIN shipping_methods ON prescription_order.Shipping_Method = shipping_methods.Methods_ID LEFT JOIN order_status ON prescription_order.Status = order_status.ID LEFT JOIN addresses ON prescription_order.Address_Target_Id = addresses.ID WHERE prescription_order.Status = ? order by prescription_order.ID desc';
+
+        try {
+            await query('Start Transaction');
+
+            const reqOrderData = await query(reqOrderQuery, 5)
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            console.log('berhasil get request user');
+            res.status(200).send({
+                error: false,
+                message: 'Get request user success',
+                detail: 'Map request user transaction',
+                data: reqOrderData
+            });
+        } catch (err) {
             await query('Rollback');
             if (err.status) {
                 res.status(err.status).send({

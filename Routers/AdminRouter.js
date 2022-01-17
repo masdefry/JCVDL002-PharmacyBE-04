@@ -16,5 +16,6 @@ routers.delete('/deleteProduct/:ID', AdminController.deleteProduct);
 routers.post('/setCost', jwtVerify, AdminController.setTotalCost);
 routers.delete('/rejectTrans/:ID', AdminController.rejectTransaction);
 routers.patch('/sendTrans/:ID', AdminController.sendProduct);
+routers.get('/fetchReqOrder', AdminController.fetchReqOrder);
 
 module.exports = routers;
