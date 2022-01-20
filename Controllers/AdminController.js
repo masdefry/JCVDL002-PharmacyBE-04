@@ -410,12 +410,12 @@ module.exports = {
     rejectTransaction: async (req, res) => {
         let data = req.params;
 
-        const deleteQuery = 'DELETE FROM prescription_order WHERE ID = ?';
+        const deleteQuery = 'UPDATE prescription_order SET Status = ? WHERE ID = ?';
 
         try {
             await query('Start Transaction');
 
-            const deleteTrans = await query(deleteQuery, data.ID)
+            const deleteTrans = await query(deleteQuery, [7, data.ID])
                 .catch((err) => {
                     console.log(err);
                     throw err;
@@ -426,7 +426,7 @@ module.exports = {
             res.status(200).send({
                 error: false,
                 message: 'Transaction Rejected',
-                detail: 'Reject transaction success deleted from database',
+                detail: 'Reject transaction set status to rejected',
             });
 
         } catch (err) {

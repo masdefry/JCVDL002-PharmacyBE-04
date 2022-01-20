@@ -3,7 +3,7 @@ const { API_URL } = require("../Supports/Constants/Constants");
 
 const GetProduct = (req, res) => {
   let scriptQuery =
-    "SELECT products.SKU, products.Category_ID, products.Name, products.Qty, products.Price, products.Image, products.Description, product_category.Name AS Category_Name FROM products INNER JOIN product_category ON products.Category_ID = product_category.ID";
+    `SELECT products.SKU, products.Category_ID, products.Name, products.Qty, products.Price, products.Image, products.Description, product_category.Name AS Category_Name FROM products INNER JOIN product_category ON products.Category_ID = product_category.ID WHERE products.Product_Type = 2`;
   // "SELECT products.Category_ID, products.SKU, products.Name, products.Qty, products.Price, products.Image, products.Description, product_category.Name as Category from dbdesign.products JOIN dbdesign.product_category on  products.Category_ID = product_category.ID";
 
   db.query(scriptQuery, (err, result) => {
