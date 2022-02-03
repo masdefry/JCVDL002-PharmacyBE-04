@@ -8,6 +8,9 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static('/Public'));
+app.use('/Public', express.static('Public'));
 // app.use(bearerToken);
 
 app.get('/', (req, res) => {
@@ -15,7 +18,13 @@ app.get('/', (req, res) => {
 });
 
 const UserRouter = require('./Routers/UserRouter');
+const AdminRouter = require('./Routers/AdminRouter');
+const ProductRouter = require("./Routers/ProductRouter");
+const CartRouter = require('./Routers/CartRouter');
 
 app.use('/user', UserRouter);
+app.use('/admin', AdminRouter);
+app.use("/products", ProductRouter);
+app.use('/cart', CartRouter);
 
 app.listen(PORT, () => console.log('Api Running:', PORT));

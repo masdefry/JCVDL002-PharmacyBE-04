@@ -10,7 +10,7 @@ const bcryptHash = require('../Helpers/bcryptHash');
 module.exports = {
     userDetail: async (req, res) => {
         let dataToken = req.dataToken;
-        console.log('user detail token' + JSON.stringify(dataToken));
+        // console.log('user detail token' + JSON.stringify(dataToken));
 
         let getDetailQuery = 'select * from user_profile where fk_profile_User_ID = ?';
         let getDataQuery = 'select * from user where id = ?';
@@ -30,8 +30,9 @@ module.exports = {
                     throw err;
                 });
 
-            console.log(getUserData);
-            console.log(getUserDetail);
+            // console.log(getUserData);
+            // console.log(getUserDetail);
+            const image = getUserDetail[0].Profile_IMG ? `http://localhost:2004/${getUserDetail[0].Profile_IMG}` : null;
 
             await query('Commit');
             console.log('berhasil profile detail');
@@ -49,7 +50,7 @@ module.exports = {
                     weight: getUserDetail[0].Weight,
                     height: getUserDetail[0].Height,
                     phone: getUserDetail[0].Phone,
-                    profileImg: getUserDetail[0].Profile_IMG,
+                    profileImg: image,
                     role: getUserData[0].Role
                 }
             });
@@ -71,16 +72,56 @@ module.exports = {
         }
     },
 
+    uploadProfileImg: async (req, res) => {
+        console.log('masuk Upload profile');
+        let dataToken = req.dataToken;
+        let imgPath = req.body.storePicture;
+
+        const setImageQuery = 'UPDATE user_profile SET Profile_IMG = ? WHERE (fk_profile_User_ID = ?)';
+
+        try {
+            await query('Start Transaction');
+
+            const SetProfileImage = await query(setImageQuery, [imgPath, dataToken.id])
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            console.log('berhasil profile detail');
+            res.status(200).send({
+                error: false,
+                message: 'Profile Image Updated',
+                detail: 'Update Profile Image Success',
+            });
+        } catch (error) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+
 
     keepLogin: async (req, res) => {
         let dataToken = req.dataToken;
 
-        console.log('ini data token' + JSON.stringify(dataToken));
+        // console.log('ini data token' + JSON.stringify(dataToken));
 
         let navQuery = 'select * from user_profile where fk_profile_User_ID = ?';
 
         let navUserQuery = 'select * from user where ID = ?';
-        console.log(dataToken.id);
+        // console.log(dataToken.id);
 
         try {
             await query('Start Transaction');
@@ -97,8 +138,9 @@ module.exports = {
                     throw err;
                 });
 
-            console.table(getUserData);
+            // console.table(getUserData);
             await query('Commit');
+            console.log('Berhasil Keep Login');
             res.status(200).send({
                 error: false,
                 message: 'Request Success',
@@ -107,6 +149,7 @@ module.exports = {
                     username: getUserData[0].Username,
                     name: getUserData[0].Name,
                     role: getUserData[0].Role,
+                    status: getUserData[0].Status,
                     profileImg: getUserDetail[0].Profile_IMG,
                 }
             });
@@ -132,24 +175,38 @@ module.exports = {
     profileUpdate: async (req, res) => {
         let dataToken = req.dataToken;
         let data = req.body;
-        console.log('profile update ' + dataToken);
+        // console.log('profile update ' + dataToken);
 
-        let query1 = 'UPDATE user_profile SET ? WHERE fk_profile_User_ID = ?';
+        let insertQuery = 'UPDATE user_profile SET ? WHERE fk_profile_User_ID = ?';
+        let getDataQuery = 'SELECT * FROM user_profile where fk_profile_User_ID = ?';
+        let setNameQuery = 'UPDATE user SET `Name` = ? WHERE (`ID` = ?)';
 
         try {
             await query('Start Transaction');
 
+            const getUserData = await query(getDataQuery, dataToken.id)
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
             let dataToSend = {
-                Gender: data.gender ? data.gender : '',
-                Birth_Date: data.birthday ? data.birthday : '',
-                Desease_History: data.deseaseh ? data.deseaseh : '',
-                Weight: data.weight ? data.weight : 0,
-                Height: data.height ? data.height : 0,
-                Phone: data.phone ? data.phone : 0,
-                Profile_IMG: data.profileimg ? data.profileimg : null
+                Gender: data.gender ? data.gender : getUserData[0].Gender,
+                Birth_Date: data.birthDate ? data.birthDate : getUserData[0].Birth_Date,
+                Weight: data.weight ? data.weight : getUserData[0].Weight,
+                Height: data.height ? data.height : getUserData[0].Height,
+                Phone: data.phone ? data.phone : getUserData[0].Phone,
             };
 
-            const updateUserData = await query(query1, [dataToSend, dataToken.id])
+            if (data.name) {
+                await query(setNameQuery, [data.name, dataToken.id])
+                    .catch((err) => {
+                        console.log(err);
+                        throw err;
+                    });
+            }
+
+            const updateUserData = await query(insertQuery, [dataToSend, dataToken.id])
                 .catch((err) => {
                     console.log(err);
                     throw err;
@@ -162,6 +219,298 @@ module.exports = {
                 detail: 'Update Profile Success'
             });
 
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+
+    AddAddress: async (req, res) => {
+        console.log('masuk addaddress');
+        let dataToken = req.dataToken;
+        let data = req.body;
+        console.log(data);
+
+        let addAddressQuery = 'INSERT INTO addresses SET ?';
+        try {
+            await query('Start Transaction');
+
+            let dataToSend = {
+                Fk_Address_User_ID: dataToken.id,
+                Full_Address: data.Full_Address,
+                Recipient_Name: data.Recipient_Name,
+                Recipient_Phone: data.Recipient_Phone,
+                Zip_Code: data.Zip_Code,
+                Address_Label: data.Address_Label,
+                City: data.City,
+                Districts: data.Districts,
+                Province: data.Province,
+                Status: 'Inactive'
+            };
+
+            let AddressData = await query(addAddressQuery, dataToSend)
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            console.log('Berhasil tambah address');
+            res.status(200).send({
+                error: false,
+                message: 'Address Added',
+                detail: 'Add Address Success'
+            });
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+
+    fetchAddress: async (req, res) => {
+        console.log('masuk fetch addresss');
+        let dataToken = req.dataToken;
+
+        const getAddressQuery = 'select * from addresses where Fk_Address_User_ID = ?';
+
+        try {
+            await query('Start Transaction');
+
+            const getAddress = await query(getAddressQuery, dataToken.id)
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            console.log('Berhasil fetch address');
+            res.status(200).send({
+                error: false,
+                message: 'Address Added',
+                detail: 'Add Address Success',
+                data: getAddress
+            });
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+
+    fetchActiveAddress: async (req, res) => {
+        console.log('masuk fetch active addresss');
+        let dataToken = req.dataToken;
+        const getAddressQuery = 'select * from addresses where Fk_Address_User_ID = ? and Status = ?';
+
+        try {
+            await query('Start Transaction');
+
+            const getAddress = await query(getAddressQuery, [dataToken.id, 'Active'])
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            console.log('Berhasil fetch active address');
+            res.status(200).send({
+                error: false,
+                message: 'Address Added',
+                detail: 'Add Address Success',
+                data: {
+                    ID: getAddress[0].ID,
+                    Detail: getAddress[0].Full_Address,
+                    Name: getAddress[0].Recipient_Name,
+                    Phone: getAddress[0].Recipient_Phone,
+                    ZipCode: getAddress[0].Zip_Code,
+                    Label: getAddress[0].Address_Label,
+                    Province: getAddress[0].Province,
+                    City: getAddress[0].City,
+                    Districts: getAddress[0].Districts,
+                }
+            });
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+
+    editAddress: async (req, res) => {
+        console.log('masuk editaddress');
+        let data = req.body;
+        console.log(data);
+
+        let getAddressQuery = 'SELECT * FROM addresses WHERE ID = ?';
+        let addAddressQuery = 'UPDATE addresses SET ? WHERE ID = ?';
+        try {
+            await query('Start Transaction');
+
+            const getAddress = await query(getAddressQuery, data.ID)
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            let dataToSend = {
+                Full_Address: data.Full_Address ? data.Full_Address : getAddress[0].Full_Address,
+                Recipient_Name: data.Recipient_Name ? data.Recipient_Name : getAddress[0].Recipient_Name,
+                Recipient_Phone: data.Recipient_Phone ? data.Recipient_Phone : getAddress[0].Recipient_Phone,
+                Zip_Code: data.Zip_Code ? data.Zip_Code : getAddress[0].Zip_Code,
+                Address_Label: data.Address_Label ? data.Address_Label : getAddress[0].Address_Label,
+                City: data.City ? data.City : getAddress[0].City,
+                Districts: data.Districts ? data.Districts : getAddress[0].Districts,
+                Province: data.Province ? data.Province : getAddress[0].Province,
+            };
+
+            let AddressData = await query(addAddressQuery, [dataToSend, data.ID])
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            console.log('Berhasil tambah address');
+            res.status(200).send({
+                error: false,
+                message: 'Address Edited',
+                detail: 'Edit Address Success'
+            });
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+
+    deleteAddress: async (req, res) => {
+        console.log(req);
+        let data = req.params;
+
+        const deleteQuery = 'DELETE FROM addresses WHERE (ID = ?)';
+
+        try {
+            await query('Start Transaction');
+
+            const deleteAddress = await query(deleteQuery, data.ID)
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            console.log('Berhasil hapus address');
+            res.status(200).send({
+                error: false,
+                message: 'Address Deleted',
+                detail: 'Delete Address Success'
+            });
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+
+    selectAddress: async (req, res) => {
+        let data = req.body;
+        let dataToken = req.dataToken;
+
+        const resetQuery = 'UPDATE addresses SET ? WHERE (Fk_Address_User_ID = ?)';
+        const setQuery = 'UPDATE addresses SET ? WHERE (ID = ?)';
+
+        try {
+            await query('Start Transaction');
+
+            const dataToReset = {
+                Status: 'Inactive'
+            };
+
+            const dataToSet = {
+                Status: 'Active'
+            };
+
+            const resetStatus = await query(resetQuery, [dataToReset, dataToken.id])
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            const setStatus = await query(setQuery, [dataToSet, data.ID])
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            await query('Commit');
+            console.log('Berhasil hapus address');
+            res.status(200).send({
+                error: false,
+                message: 'Address Selected',
+                detail: 'Select Address Success'
+            });
         } catch (err) {
             await query('Rollback');
             if (err.status) {

@@ -1,9 +1,15 @@
 const UserAuth = require('./UserAuth');
 const UserProfile = require('./UserProfile');
+const UserTransaction = require('./UserTransaction');
 const AdminController = require('./AdminController');
+const ProductController = require('./ProductController');
+const CartController = require('./CartController');
 
 module.exports = {
     UserAuth,
     UserProfile,
-    AdminController
+    UserTransaction,
+    AdminController,
+    ProductController,
+    CartController
 };

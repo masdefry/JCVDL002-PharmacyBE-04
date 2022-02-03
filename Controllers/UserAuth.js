@@ -2,16 +2,18 @@ const util = require('util');
 const { db } = require('../Database/Connection');
 const query = util.promisify(db.query).bind(db);
 const bcrypt = require('bcrypt');
+const handlebars = require('handlebars');
+const fs = require('fs');
 
 const jwtSign = require('../Helpers/JWTSign');
 const hashPassword = require('../Helpers/HashPassword');
 const bcryptHash = require('../Helpers/bcryptHash');
 const transporter = require('../Helpers/nodemailer');
-const emailVerify = require('../Public/verifyEmail.html');
 
 module.exports = {
     registerUser: async (req, res) => {
         const data = req.body;
+        console.log(data.email);
 
         let checkEmailQuery = 'SELECT * FROM user WHERE email = ?';
         let inputDataQuery = 'INSERT INTO user SET ?';
@@ -27,7 +29,7 @@ module.exports = {
             let hashedPassword = bcryptHash(data.password);
 
             let dataToSend = {
-                name: data.name ? data.name : '',
+                name: data.fullname ? data.fullname : '',
                 username: data.username ? data.username : '',
                 email: data.email ? data.email : '',
                 password: hashedPassword ? hashedPassword : '',
@@ -51,21 +53,43 @@ module.exports = {
 
             let token = jwtSign({ id: insertData.insertId, role: dataToSend.role });
 
-            let verifMail = {
-                from: `Admin <dimzmailer@gmail.com>`,
-                to: `${data.email}`,
-                subject: `Account Verification`,
-                html: `${emailVerify}`
-            };
+            // let registerMail = {
+            //     from: 'Admin (No REPLY) <dimzmailer@gmail.com>',
+            //     to: `${data.email}`,
+            //     subject: `Confirm Email Address`,
+            //     html: `<a href='http://localhost:3000/verif/${token}'>Click here to Verify your account</a>`
+            // };
 
-            transporter.sendMail(verifMail, (errMail, resultMail) => {
-                if (errMail) {
-                    console.log(errMail);
-                    resultMail.status(500).send({ message: 'Registration Failed', success: false, err: errMail });
-                }
+            // transporter.sendMail(registerMail, (errMail, resultMail) => {
+            //     if (errMail) {
+            //         console.log(errMail);
+            //         res.status(500).send({ message: 'Mailing reset token failed', success: false, err: errMail });
+            //     }
+            // });
+
+            fs.readFile(`C:/Users/Dimz/Documents/Purwadhika/FinalProject/fpBackend/Public/verifyEmail.html`, { encoding: 'utf-8' }, (err, file) => {
+                if (err) throw err;
+
+                const template = handlebars.compile(file);
+                const emailVerify = template({ link: `http://localhost:3000/verif/${token}` });
+
+                let registerMail = {
+                    from: 'Admin (No REPLY) <dimzmailer@gmail.com>',
+                    to: `${data.email}`,
+                    subject: `Confirm Email Address`,
+                    html: emailVerify
+                };
+
+                transporter.sendMail(registerMail, (errMail, resultMail) => {
+                    if (errMail) {
+                        console.log(errMail);
+                        res.status(500).send({ message: 'Mailing reset token failed', success: false, err: errMail });
+                    }
+                });
             });
 
             await query('Commit');
+            console.log('Register Berhasil');
             res.status(200).send({
                 error: false,
                 message: 'Register Success',
@@ -99,12 +123,12 @@ module.exports = {
     verification: async (req, res) => {
         const dataToken = req.dataToken;
 
-        let verif = `update user set status = 'varified' where id = ?`;
+        let verif = `update user set status = 'verified' where id = ?`;
 
         try {
             await query('Start Transaction');
 
-            let setVerif = await query(verif, data.name)
+            let setVerif = await query(verif, dataToken.id)
                 .catch((err) => {
                     throw err;
                 });
@@ -135,14 +159,16 @@ module.exports = {
     },
 
     ForgotPasswordReq: async (req, res) => {
+        console.log('masuk req forgot password');
         let dataBody = req.body;
+        console.log(dataBody.Email);
 
-        let dataReqQuery = 'select * from user where id = ?';
+        let dataReqQuery = 'select * from user where email = ?';
 
         try {
             await query('Start Transaction');
 
-            const getUserData = await query(dataReqQuery, dataBody.id)
+            const getUserData = await query(dataReqQuery, dataBody.Email)
                 .catch((err) => {
                     console.log(err, 'Err Get User Data');
                     throw err;
@@ -152,9 +178,9 @@ module.exports = {
 
             let resetPassMail = {
                 from: 'Admin (No REPLY) <dimzmailer@gmail.com>',
-                to: `${dataBody.email}`,
+                to: `${dataBody.Email}`,
                 subject: `Password Reset`,
-                hmtl: `<a href='http://localhost:3000/auth/${token}'>Click here to reset password</a>`
+                html: `<a href='http://localhost:3000/resetPassword/${token}'>Click here to reset password</a>`
             };
 
             transporter.sendMail(resetPassMail, (errMail, resultMail) => {
@@ -162,6 +188,14 @@ module.exports = {
                     console.log(errMail);
                     res.status(500).send({ message: 'Mailing reset token failed', success: false, err: errMail });
                 }
+            });
+
+            await query('Commit');
+            console.log('Berhasil Change Password');
+            res.status(200).send({
+                error: false,
+                message: 'Forgot Password Request',
+                detail: 'Request Sent'
             });
         } catch (err) {
             await query('Rollback');
@@ -180,6 +214,7 @@ module.exports = {
             }
         }
     },
+
     login: async (req, res) => {
         let data = req.body;
 
@@ -200,7 +235,7 @@ module.exports = {
                     throw err;
                 });
 
-            console.log(`validation: ${validation}`);
+            // console.log(`validation: ${validation}`);
 
             let token = jwtSign({ id: getUserData[0].ID, role: getUserData[0].Role });
 
@@ -213,6 +248,8 @@ module.exports = {
                     detail: 'Login success',
                     data: {
                         id: getUserData[0].ID,
+                        role: getUserData[0].Role,
+                        status: getUserData[0].Status,
                         token: token
                     }
                 });
@@ -239,13 +276,53 @@ module.exports = {
             }
         }
     },
+
+    setUsername: async (req, res) => {
+        let data = req.body;
+        let dataToken = req.dataToken;
+
+        const setUNameQuery = 'UPDATE user SET UserName = ? WHERE (ID = ?)';
+
+        try {
+            await query('Start Transaction');
+
+            const setUName = await query(setUNameQuery, [data.username, dataToken.id])
+                .catch((err) => {
+                    console.log(err);
+                    throw err;
+                });
+
+            res.status(200).send({
+                error: false,
+                message: 'Username set',
+                detail: 'Set username success',
+            });
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(500).send({
+                    error: true,
+                    message: err.message
+                });
+            }
+        }
+    },
+
     changePassword: async (req, res) => {
         let data = req.body;
         let dataToken = req.dataToken;
-        console.log(dataToken);
+        console.log(data.oldPassword);
+        console.log(data.newPassword);
+        // console.log(dataToken);
 
         let dataReqQuery = 'select * from user where id = ?';
-        let patchReq = 'update user set password = ? where email = ?';
+        let patchReq = 'update user set Password = ? where Email = ?';
 
         try {
             await query('Start Transaction');
@@ -259,6 +336,7 @@ module.exports = {
             let oldValid = await bcrypt.compare(data.oldPassword, getUserData[0].Password);
 
             if (!oldValid) {
+                console.log('Password tidak valid');
                 throw {
                     status: 400,
                     message: 'Old password not valid',
@@ -266,15 +344,17 @@ module.exports = {
                 };
             }
 
+            console.log(data.newPassword);
             let hashedPassword = bcryptHash(data.newPassword);
 
-            const resetPassword = await query(patchReq, [hashedPassword, getUserData[0].email])
+            await query(patchReq, [hashedPassword, getUserData[0].email])
                 .catch((err) => {
                     console.log(err);
                     throw err;
                 });
 
             await query('Commit');
+            console.log('Berhasil Change Password');
             res.status(200).send({
                 error: false,
                 message: 'Password Reset',
@@ -299,21 +379,56 @@ module.exports = {
     },
     resetPassword: async (req, res) => {
         let data = req.body;
-        let dataToken = req.dataToken;
 
-        let getQuery = 'select * from user where email = ?';
-        let updateQuery = 'update user set password = ? where email = ?';
+        let updateQuery = 'update user set password = ? where id = ?';
 
         try {
             await query('Start Trasaction');
 
             let hashedPassword = bcryptHash(data.password);
 
-            const resetPass = await query(updateQuery, [hashedPassword, dataToken.email])
+            const resetPass = await query(updateQuery, [hashedPassword, dataToken.id])
                 .catch((err) => {
                     console.log(err);
                     throw err;
                 });
+
+            await query('Commit');
+            console.log('Berhasil Reset Password');
+            res.status(200).send({
+                error: false,
+                message: 'Password Reset',
+                detail: 'Reset password success'
+            });
+
+        } catch (err) {
+            await query('Rollback');
+            if (err.status) {
+                res.status(err.status).send({
+                    error: true,
+                    message: err.message,
+                    detail: err.detail
+                });
+            } else {
+                res.status(err.status);
+            }
+        }
+    },
+
+    getNotification: async (req, res) => {
+        let dataToken = req.dataToken;
+
+        const getNotifQuery = 'SELECT * FROM notification WHERE User_ID = ?';
+
+        try {
+
+            await query('Commit');
+            console.log('Berhasil get notification');
+            res.status(200).send({
+                error: false,
+                message: 'Password Reset',
+                detail: 'Reset password success'
+            });
 
         } catch (err) {
             await query('Rollback');
